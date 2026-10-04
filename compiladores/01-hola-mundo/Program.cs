@@ -3,6 +3,12 @@ using Grupo1.HolaMundo;
 
 Console.OutputEncoding = Encoding.UTF8;
 
+if (args.Contains("--pruebas", StringComparer.OrdinalIgnoreCase))
+{
+    Environment.ExitCode = PruebasHolaMundo.Ejecutar();
+    return;
+}
+
 Console.WriteLine("Mini-compilador Hola Mundo");
 Console.WriteLine("Entrada válida:");
 Console.WriteLine("  IMPRIMIR \"Hola Mundo\"");
@@ -52,18 +58,20 @@ try
     Console.WriteLine();
     Console.WriteLine(resultado.CodigoCSharp);
 
-    string carpetaSalida = Path.Combine(
-        Directory.GetCurrentDirectory(),
-        "salida",
-        "hola-mundo");
-
-    Directory.CreateDirectory(carpetaSalida);
-
-    string rutaCodigo = Path.Combine(carpetaSalida, "ProgramaGenerado.cs");
-    File.WriteAllText(rutaCodigo, resultado.CodigoCSharp, Encoding.UTF8);
+    var compiladorDotNet = new CompiladorDotNet();
+    ResultadoEjecucion ejecucion = compiladorDotNet.CompilarYEjecutar(resultado.CodigoCSharp);
 
     Console.WriteLine();
-    Console.WriteLine($"Archivo generado: {rutaCodigo}");
+    Console.WriteLine($"Archivo C#: {ejecucion.RutaCodigo}");
+
+    if (ejecucion.RutaEjecutable is not null)
+    {
+        Console.WriteLine($"Ejecutable: {ejecucion.RutaEjecutable}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("Resultado de ejecución:");
+    Console.WriteLine(ejecucion.Salida);
 }
 catch (ErrorCompilacion error)
 {
