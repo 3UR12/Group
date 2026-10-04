@@ -1,0 +1,32 @@
+name: Validar Hola Mundo
+
+on:
+  push:
+    branches:
+      - hola-mundo
+    paths:
+      - "compiladores/01-hola-mundo/**"
+      - ".github/workflows/validar-hola-mundo.yml"
+  pull_request:
+    paths:
+      - "compiladores/01-hola-mundo/**"
+      - ".github/workflows/validar-hola-mundo.yml"
+
+jobs:
+  validar:
+    runs-on: windows-latest
+
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Compilar proyecto
+        run: dotnet build compiladores/01-hola-mundo/HolaMundo.csproj -c Release --nologo
+
+      - name: Ejecutar pruebas
+        run: dotnet run --project compiladores/01-hola-mundo/HolaMundo.csproj -c Release --no-build -- --pruebas
