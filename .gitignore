@@ -1,0 +1,31 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Compilación
+bin/
+obj/
+artifacts/
+TestResults/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Archivos temporales
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Publicación local
+publish/
