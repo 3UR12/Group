@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorHolaMundo", "compiladores\01-hola-mundo\MiniCompiladorHolaMundo.csproj", "{A6B3A6B3-1111-4444-8888-000000000001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorHolaMundo", "compiladores\01-compilador-hola-mundo\MiniCompiladorHolaMundo.csproj", "{A6B3A6B3-1111-4444-8888-000000000001}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorEstructurasIf", "compiladores\06-estructuras-if\MiniCompiladorEstructurasIf.csproj", "{A6B3A6B3-1111-4444-8888-000000000002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorEstructurasIf", "compiladores\06-compilador-estructuras-if\MiniCompiladorEstructurasIf.csproj", "{A6B3A6B3-1111-4444-8888-000000000002}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorFormularios", "compiladores\09-formularios\MiniCompiladorFormularios.csproj", "{A6B3A6B3-1111-4444-8888-000000000003}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniCompiladorFormularios", "compiladores\09-compilador-lenguaje-para-formularios\MiniCompiladorFormularios.csproj", "{A6B3A6B3-1111-4444-8888-000000000003}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

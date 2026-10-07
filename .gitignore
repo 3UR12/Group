@@ -5,16 +5,16 @@
 *.userosscache
 *.sln.docstates
 
-# Compilación
+# Visual Studio Code
+.vscode/
+
+# Compilación y publicación
 bin/
 obj/
+salida/
+publish/
 artifacts/
 TestResults/
-
-# Visual Studio Code
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 
 # Archivos temporales
 *.tmp
@@ -26,6 +26,3 @@ TestResults/
 # Sistema operativo
 .DS_Store
 Thumbs.db
-
-# Publicación local
-publish/

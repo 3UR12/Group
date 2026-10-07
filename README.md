@@ -1,37 +1,61 @@
-<div align="center">
-
-# Compiladores · Grupo 1
+# Mini-compiladores — Grupo 1
 
 Universidad Interamericana de Panamá  
-Curso: Compiladores  
-2026
+Curso: Compiladores · 2026
 
-Daniela Insturaín · Aaron Fechrenback · Euris J. Rodríguez V.
+## Integrantes
 
-</div>
+- Daniela Insturaín
+- Aaron Fechrenback
+- Euris J. Rodríguez V.
 
-Nuestro grupo desarrolla tres mini-compiladores:
+## Entrega
 
-1. Hola Mundo
-2. Estructuras IF
-3. Lenguaje para formularios
+Este repositorio contiene únicamente los tres mini-compiladores asignados al grupo y los archivos necesarios para abrirlos, compilarlos y probarlos.
 
-Código fuente → Análisis léxico → Análisis sintáctico → Generación de código → Compilación → Resultado
+| # | Mini-compilador | Carpeta | Producto esperado | Nivel |
+|---|---|---|---|---|
+| 01 | Compilador “Hola Mundo” | `compiladores/01-compilador-hola-mundo/` | Archivo `.cs` y posteriormente `.exe` | Básico |
+| 06 | Compilador de estructuras IF | `compiladores/06-compilador-estructuras-if/` | Código C# con `if` | Intermedio |
+| 09 | Compilador de lenguaje para formularios | `compiladores/09-compilador-lenguaje-para-formularios/` | Aplicación Windows Forms | Intermedio |
 
-Tecnologías: C#, .NET 8 y Visual Studio 2022. Windows Forms se utiliza solamente para el compilador de formularios.
+Cada carpeta incluye su propio `README.md` con la sintaxis aceptada, tokens, análisis, casos de prueba, errores esperados y forma de ejecución.
+
+## Requisitos
+
+- Windows 10 u 11.
+- .NET 8 SDK.
+- Visual Studio 2022 con desarrollo de escritorio de .NET, o una terminal con `dotnet`.
+
+## Abrir los tres proyectos
+
+Con Visual Studio 2022, abrir:
 
 ```text
 CompiladoresGrupo1.sln
-compiladores/
-├── 01-hola-mundo/
-├── 06-estructuras-if/
-└── 09-formularios/
 ```
 
-Abrir `CompiladoresGrupo1.sln` con Visual Studio 2022 y seleccionar el proyecto que se desea ejecutar.
+Desde terminal, cada proyecto también puede ejecutarse con `dotnet run --project` usando la ruta indicada en su README.
 
-**Hola Mundo** es una aplicación de consola y acepta `IMPRIMIR "Hola Mundo"`.
+## Estructura
 
-**Estructuras IF** es una aplicación de consola y acepta declaraciones como `ENTERO edad = 20` y condiciones `SI edad >= 18 ENTONCES`.
+```text
+CompiladoresGrupo1.sln
+README.md
+.gitignore
+compiladores/
+├── 01-compilador-hola-mundo/
+│   ├── MiniCompiladorHolaMundo.csproj
+│   ├── Program.cs
+│   └── README.md
+├── 06-compilador-estructuras-if/
+│   ├── MiniCompiladorEstructurasIf.csproj
+│   ├── Program.cs
+│   └── README.md
+└── 09-compilador-lenguaje-para-formularios/
+    ├── MiniCompiladorFormularios.csproj
+    ├── Program.cs
+    └── README.md
+```
 
-**Lenguaje para formularios** acepta instrucciones como `FORMULARIO "Registro"`, `ETIQUETA "Nombre"`, `CAMPO nombre` y `BOTON "Guardar"`.
+Las carpetas `bin/`, `obj/`, `salida/` y otros artefactos locales se excluyen del repositorio mediante `.gitignore`.
