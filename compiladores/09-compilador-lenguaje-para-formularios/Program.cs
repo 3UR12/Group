@@ -180,14 +180,31 @@ static class LenguajeFormulario
     {
         string Escapar(string texto) => texto.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
+        var nombresCampos = new List<string>();
+        foreach (ElementoFormulario elemento in elementos)
+        {
+            if (elemento.Tipo == "Campo")
+            {
+                nombresCampos.Add(elemento.Valor);
+            }
+        }
+
         var codigo = new StringBuilder();
         int posicionY = 25;
+        int numeroBoton = 0;
 
         codigo.AppendLine("using System;");
+        codigo.AppendLine("using System.IO;");
+        codigo.AppendLine("using System.Text;");
         codigo.AppendLine("using System.Windows.Forms;");
         codigo.AppendLine();
         codigo.AppendLine("internal static class Program");
         codigo.AppendLine("{");
+        codigo.AppendLine("    private static string EscaparCsv(string valor)");
+        codigo.AppendLine("    {");
+        codigo.AppendLine("        return \"\\\"\" + valor.Replace(\"\\\"\", \"\\\"\\\"\") + \"\\\"\";");
+        codigo.AppendLine("    }");
+        codigo.AppendLine();
         codigo.AppendLine("    [STAThread]");
         codigo.AppendLine("    static void Main()");
         codigo.AppendLine("    {");
@@ -197,45 +214,130 @@ static class LenguajeFormulario
         codigo.AppendLine("        {");
         codigo.AppendLine($"            Text = \"{Escapar(titulo)}\",");
         codigo.AppendLine("            Width = 420,");
-        codigo.AppendLine("            Height = 180");
+        codigo.AppendLine("            Height = 180,");
+        codigo.AppendLine("            StartPosition = FormStartPosition.CenterScreen");
         codigo.AppendLine("        };");
         codigo.AppendLine();
 
         foreach (ElementoFormulario elemento in elementos)
         {
-            string clase = elemento.Tipo switch
-            {
-                "Etiqueta" => "Label",
-                "Campo" => "TextBox",
-                _ => "Button"
-            };
-
-            string propiedad = elemento.Tipo == "Campo" ? "Name" : "Text";
-
-            codigo.AppendLine($"        formulario.Controls.Add(new {clase}");
-            codigo.AppendLine("        {");
-            codigo.AppendLine($"            {propiedad} = \"{Escapar(elemento.Valor)}\",");
-            codigo.AppendLine("            Left = 25,");
-            codigo.AppendLine($"            Top = {posicionY},");
-
             if (elemento.Tipo == "Etiqueta")
             {
+                codigo.AppendLine("        formulario.Controls.Add(new Label");
+                codigo.AppendLine("        {");
+                codigo.AppendLine($"            Text = \"{Escapar(elemento.Valor)}\",");
+                codigo.AppendLine("            Left = 25,");
+                codigo.AppendLine($"            Top = {posicionY},");
                 codigo.AppendLine("            AutoSize = true");
+                codigo.AppendLine("        });");
+                codigo.AppendLine();
+                posicionY += 25;
+                continue;
             }
-            else
+
+            if (elemento.Tipo == "Campo")
             {
+                string variable = "campo_" + elemento.Valor;
+                codigo.AppendLine($"        var {variable} = new TextBox");
+                codigo.AppendLine("        {");
+                codigo.AppendLine($"            Name = \"{Escapar(elemento.Valor)}\",");
+                codigo.AppendLine("            Left = 25,");
+                codigo.AppendLine($"            Top = {posicionY},");
                 codigo.AppendLine("            Width = 300");
+                codigo.AppendLine("        };");
+                codigo.AppendLine($"        formulario.Controls.Add({variable});");
+                codigo.AppendLine();
+                posicionY += 57;
+                continue;
             }
 
-            codigo.AppendLine("        });");
-            codigo.AppendLine();
+            string boton = $"boton_{numeroBoton++}";
+            codigo.AppendLine($"        var {boton} = new Button");
+            codigo.AppendLine("        {");
+            codigo.AppendLine($"            Text = \"{Escapar(elemento.Valor)}\",");
+            codigo.AppendLine("            Left = 25,");
+            codigo.AppendLine($"            Top = {posicionY},");
+            codigo.AppendLine("            Width = 300");
+            codigo.AppendLine("        };");
 
-            posicionY += elemento.Tipo switch
+            if (elemento.Valor.Equals("Guardar", StringComparison.OrdinalIgnoreCase))
             {
-                "Campo" => 57,
-                "Boton" => 63,
-                _ => 25
-            };
+                codigo.AppendLine();
+                codigo.AppendLine($"        {boton}.Click += (_, _) =>");
+                codigo.AppendLine("        {");
+
+                if (nombresCampos.Count == 0)
+                {
+                    codigo.AppendLine("            MessageBox.Show(\"No hay campos para guardar.\", \"Guardar\", MessageBoxButtons.OK, MessageBoxIcon.Information);");
+                }
+                else
+                {
+                    string validacion = string.Join(
+                        " || ",
+                        nombresCampos.ConvertAll(nombre => $"string.IsNullOrWhiteSpace(campo_{nombre}.Text)"));
+                    string cabeceras = string.Join(
+                        ", ",
+                        nombresCampos.ConvertAll(nombre => $"EscaparCsv(\"{Escapar(nombre)}\")"));
+                    string valores = string.Join(
+                        ", ",
+                        nombresCampos.ConvertAll(nombre => $"EscaparCsv(campo_{nombre}.Text)"));
+
+                    codigo.AppendLine($"            if ({validacion})");
+                    codigo.AppendLine("            {");
+                    codigo.AppendLine("                MessageBox.Show(\"Complete todos los campos antes de guardar.\", \"Validación\", MessageBoxButtons.OK, MessageBoxIcon.Warning);");
+                    codigo.AppendLine("                return;");
+                    codigo.AppendLine("            }");
+                    codigo.AppendLine();
+                    codigo.AppendLine("            try");
+                    codigo.AppendLine("            {");
+                    codigo.AppendLine("                string carpetaDatos = Path.Combine(");
+                    codigo.AppendLine("                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),");
+                    codigo.AppendLine("                    \"MiniCompiladoresUIP\",");
+                    codigo.AppendLine("                    \"Formularios\");
+                    codigo.AppendLine("                Directory.CreateDirectory(carpetaDatos);");
+                    codigo.AppendLine("                string archivoDatos = Path.Combine(carpetaDatos, \"registros.csv\");");
+                    codigo.AppendLine("                bool archivoNuevo = !File.Exists(archivoDatos);");
+                    codigo.AppendLine();
+                    codigo.AppendLine("                using (var escritor = new StreamWriter(archivoDatos, true, new UTF8Encoding(false)))");
+                    codigo.AppendLine("                {");
+                    codigo.AppendLine("                    if (archivoNuevo)");
+                    codigo.AppendLine("                    {");
+                    codigo.AppendLine($"                        escritor.WriteLine(string.Join(\",\", new[] {{ {cabeceras} }}));");
+                    codigo.AppendLine("                    }");
+                    codigo.AppendLine();
+                    codigo.AppendLine($"                    escritor.WriteLine(string.Join(\",\", new[] {{ {valores} }}));");
+                    codigo.AppendLine("                }");
+                    codigo.AppendLine();
+                    codigo.AppendLine("                MessageBox.Show(");
+                    codigo.AppendLine("                    \"Datos guardados correctamente.\\n\\nArchivo:\\n\" + archivoDatos,");
+                    codigo.AppendLine("                    \"Registro guardado\",");
+                    codigo.AppendLine("                    MessageBoxButtons.OK,");
+                    codigo.AppendLine("                    MessageBoxIcon.Information);");
+                    codigo.AppendLine();
+
+                    foreach (string nombre in nombresCampos)
+                    {
+                        codigo.AppendLine($"                campo_{nombre}.Clear();");
+                    }
+
+                    codigo.AppendLine($"                campo_{nombresCampos[0]}.Focus();");
+                    codigo.AppendLine("            }");
+                    codigo.AppendLine("            catch (Exception error)");
+                    codigo.AppendLine("            {");
+                    codigo.AppendLine("                MessageBox.Show(");
+                    codigo.AppendLine("                    \"No fue posible guardar los datos.\\n\\n\" + error.Message,");
+                    codigo.AppendLine("                    \"Error al guardar\",");
+                    codigo.AppendLine("                    MessageBoxButtons.OK,");
+                    codigo.AppendLine("                    MessageBoxIcon.Error);");
+                    codigo.AppendLine("            }");
+                }
+
+                codigo.AppendLine("        };");
+            }
+
+            codigo.AppendLine($"        formulario.Controls.Add({boton});");
+            codigo.AppendLine();
+            posicionY += 63;
         }
 
         codigo.AppendLine($"        formulario.Height = Math.Max(180, {posicionY + 70});");
