@@ -233,15 +233,92 @@ Al presionarlo:
 6. se muestra una confirmación con la ruta exacta del archivo;
 7. los campos se limpian para permitir un nuevo registro.
 
-Los datos se guardan en:
+Los datos se guardan dentro de la carpeta Documentos del usuario actual de Windows:
 
 ```text
 Documentos\MiniCompiladoresUIP\Formularios\registros.csv
 ```
 
-La ruta parte de la carpeta Documentos del usuario actual de Windows.
+El archivo se escribe en UTF-8 y utiliza punto y coma (`;`) como separador.
 
-El archivo utiliza UTF-8 y formato CSV. Los valores se escriben entre comillas para evitar problemas con comas incluidas en los datos.
+Ejemplo:
+
+```text
+nombre;correo
+Ana Pérez;ana@ejemplo.com
+```
+
+## Cómo localizar y comprobar el archivo guardado
+
+La aplicación muestra la ruta exacta después de guardar. Si se cerró ese mensaje o se desea verificar manualmente, desde PowerShell se puede ejecutar:
+
+```powershell
+$archivo = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "MiniCompiladoresUIP\Formularios\registros.csv"
+Write-Host $archivo
+```
+
+Para comprobar que el archivo existe:
+
+```powershell
+Test-Path $archivo
+```
+
+El resultado esperado es:
+
+```text
+True
+```
+
+Para ver los registros guardados:
+
+```powershell
+Get-Content $archivo
+```
+
+Para abrir directamente la carpeta donde se encuentra el CSV:
+
+```powershell
+explorer (Split-Path $archivo)
+```
+
+Estas comprobaciones no son necesarias para utilizar la aplicación; sirven para verificar físicamente que la persistencia local funciona.
+
+## Comprobación rápida del proyecto
+
+Desde la raíz del repositorio puede verificarse que el proyecto compila con:
+
+```powershell
+dotnet build ".\compiladores\09-compilador-lenguaje-para-formularios\MiniCompiladorFormularios.csproj" -c Release
+```
+
+El resultado esperado es una compilación sin errores.
+
+Después puede ejecutarse con:
+
+```powershell
+dotnet run --project ".\compiladores\09-compilador-lenguaje-para-formularios\MiniCompiladorFormularios.csproj"
+```
+
+Secuencia recomendada para la prueba funcional:
+
+```text
+Cargar ejemplo
+→ Analizar
+→ Generar formulario
+→ Abrir formulario generado
+→ completar Nombre y Correo
+→ Guardar
+```
+
+Al finalizar deben cumplirse estas condiciones:
+
+- el análisis es correcto;
+- el código C# generado es visible y legible;
+- la compilación del formulario generado termina correctamente;
+- el formulario se abre;
+- el botón `Guardar` valida campos vacíos;
+- se crea `registros.csv`;
+- el registro aparece al consultar el archivo.
 
 ## Caso válido
 
@@ -277,9 +354,9 @@ Compilación correcta.
 
 Ejemplo de contenido:
 
-```csv
-"nombre","correo"
-"Ana Pérez","ana@ejemplo.com"
+```text
+nombre;correo
+Ana Pérez;ana@ejemplo.com
 ```
 
 ## Caso inválido: campo vacío al guardar
@@ -353,7 +430,7 @@ Los archivos temporales generados por este proceso no forman parte del repositor
 |---|---|
 | `Program.cs` | Contiene lexer, parser, validación semántica, generador de C#, compilación e interfaz del mini-compilador. |
 | `MiniCompiladorFormularios.csproj` | Define el proyecto Windows Forms en .NET 8. |
-| `README.md` | Documenta sintaxis, tokens, pruebas, errores, generación y guardado. |
+| `README.md` | Documenta sintaxis, tokens, pruebas, errores, generación, guardado y verificación. |
 
 ## Alcance
 
