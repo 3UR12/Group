@@ -35,7 +35,11 @@ static class LenguajeFormulario
 
             if (char.IsWhiteSpace(actual))
             {
-                if (actual == '\n') linea++;
+                if (actual == '\n')
+                {
+                    linea++;
+                }
+
                 posicion++;
                 continue;
             }
@@ -43,10 +47,16 @@ static class LenguajeFormulario
             if (actual == '"')
             {
                 int inicio = ++posicion;
-                while (posicion < fuente.Length && fuente[posicion] != '"') posicion++;
+
+                while (posicion < fuente.Length && fuente[posicion] != '"')
+                {
+                    posicion++;
+                }
 
                 if (posicion >= fuente.Length)
+                {
                     throw new Exception($"Error léxico en la línea {linea}: la cadena de texto no tiene comillas de cierre.");
+                }
 
                 string contenido = fuente[inicio..posicion];
                 posicion++;
@@ -57,6 +67,7 @@ static class LenguajeFormulario
             if (char.IsLetter(actual) || actual == '_')
             {
                 int inicio = posicion;
+
                 while (posicion < fuente.Length &&
                        (char.IsLetterOrDigit(fuente[posicion]) || fuente[posicion] == '_'))
                 {
@@ -91,30 +102,41 @@ static class LenguajeFormulario
 
         Token Consumir(TipoToken esperado, string mensaje)
         {
-            if (tokens[posicion].Tipo != esperado) throw new Exception(mensaje);
+            if (posicion >= tokens.Count || tokens[posicion].Tipo != esperado)
+            {
+                throw new Exception(mensaje);
+            }
+
             return tokens[posicion++];
         }
 
         Consumir(TipoToken.Formulario, "Error sintáctico: se esperaba FORMULARIO al inicio.");
-        Token titulo = Consumir(TipoToken.Cadena, "Error sintáctico: FORMULARIO requiere un título entre comillas.");
+        Token titulo = Consumir(
+            TipoToken.Cadena,
+            "Error sintáctico: FORMULARIO requiere un título entre comillas.");
 
         var elementos = new List<ElementoFormulario>();
         var campos = new HashSet<string>(StringComparer.Ordinal);
 
-        while (tokens[posicion].Tipo != TipoToken.FinFormulario)
+        while (posicion < tokens.Count && tokens[posicion].Tipo != TipoToken.FinFormulario)
         {
             if (tokens[posicion].Tipo == TipoToken.FinArchivo)
+            {
                 throw new Exception("Error sintáctico: falta FIN_FORMULARIO.");
+            }
 
             Token actual = tokens[posicion++];
 
             switch (actual.Tipo)
             {
                 case TipoToken.Etiqueta:
-                    elementos.Add(new ElementoFormulario(
-                        "Etiqueta",
-                        Consumir(TipoToken.Cadena, "Error sintáctico: ETIQUETA requiere un texto entre comillas.").Texto));
+                {
+                    Token texto = Consumir(
+                        TipoToken.Cadena,
+                        "Error sintáctico: ETIQUETA requiere un texto entre comillas.");
+                    elementos.Add(new ElementoFormulario("Etiqueta", texto.Texto));
                     break;
+                }
 
                 case TipoToken.Campo:
                 {
@@ -123,17 +145,22 @@ static class LenguajeFormulario
                         "Error sintáctico: falta el identificador del campo.");
 
                     if (!campos.Add(identificador.Texto))
+                    {
                         throw new Exception($"Error semántico: el campo '{identificador.Texto}' está repetido.");
+                    }
 
                     elementos.Add(new ElementoFormulario("Campo", identificador.Texto));
                     break;
                 }
 
                 case TipoToken.Boton:
-                    elementos.Add(new ElementoFormulario(
-                        "Boton",
-                        Consumir(TipoToken.Cadena, "Error sintáctico: BOTON requiere un texto entre comillas.").Texto));
+                {
+                    Token texto = Consumir(
+                        TipoToken.Cadena,
+                        "Error sintáctico: BOTON requiere un texto entre comillas.");
+                    elementos.Add(new ElementoFormulario("Boton", texto.Texto));
                     break;
+                }
 
                 default:
                     throw new Exception($"Error sintáctico: '{actual.Texto}' no es un elemento válido dentro del formulario.");
@@ -148,9 +175,13 @@ static class LenguajeFormulario
 
     private static string GenerarCodigo(string titulo, List<ElementoFormulario> elementos)
     {
-        string Escapar(string texto) => texto.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        static string EscaparTextoCs(string texto) => texto
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\r", "\\r")
+            .Replace("\n", "\\n");
 
-        var nombresCampos = elementos
+        List<string> nombresCampos = elementos
             .Where(elemento => elemento.Tipo == "Campo")
             .Select(elemento => elemento.Valor)
             .ToList();
@@ -173,7 +204,7 @@ static class LenguajeFormulario
         codigo.AppendLine();
         codigo.AppendLine("        var formulario = new Form");
         codigo.AppendLine("        {");
-        codigo.AppendLine($"            Text = \"{Escapar(titulo)}\",");
+        codigo.AppendLine($"            Text = \"{EscaparTextoCs(titulo)}\",");
         codigo.AppendLine("            Width = 420,");
         codigo.AppendLine("            Height = 180,");
         codigo.AppendLine("            StartPosition = FormStartPosition.CenterScreen");
@@ -186,7 +217,7 @@ static class LenguajeFormulario
             {
                 codigo.AppendLine("        formulario.Controls.Add(new Label");
                 codigo.AppendLine("        {");
-                codigo.AppendLine($"            Text = \"{Escapar(elemento.Valor)}\",");
+                codigo.AppendLine($"            Text = \"{EscaparTextoCs(elemento.Valor)}\",");
                 codigo.AppendLine("            Left = 25,");
                 codigo.AppendLine($"            Top = {posicionY},");
                 codigo.AppendLine("            AutoSize = true");
@@ -199,9 +230,10 @@ static class LenguajeFormulario
             if (elemento.Tipo == "Campo")
             {
                 string variable = "campo_" + elemento.Valor;
+
                 codigo.AppendLine($"        var {variable} = new TextBox");
                 codigo.AppendLine("        {");
-                codigo.AppendLine($"            Name = \"{Escapar(elemento.Valor)}\",");
+                codigo.AppendLine($"            Name = \"{EscaparTextoCs(elemento.Valor)}\",");
                 codigo.AppendLine("            Left = 25,");
                 codigo.AppendLine($"            Top = {posicionY},");
                 codigo.AppendLine("            Width = 300");
@@ -213,9 +245,10 @@ static class LenguajeFormulario
             }
 
             string boton = $"boton_{numeroBoton++}";
+
             codigo.AppendLine($"        var {boton} = new Button");
             codigo.AppendLine("        {");
-            codigo.AppendLine($"            Text = \"{Escapar(elemento.Valor)}\",");
+            codigo.AppendLine($"            Text = \"{EscaparTextoCs(elemento.Valor)}\",");
             codigo.AppendLine("            Left = 25,");
             codigo.AppendLine($"            Top = {posicionY},");
             codigo.AppendLine("            Width = 300");
@@ -246,33 +279,28 @@ static class LenguajeFormulario
                     codigo.AppendLine();
                     codigo.AppendLine("            try");
                     codigo.AppendLine("            {");
-                    codigo.AppendLine("                string carpetaDatos = Path.Combine(");
-                    codigo.AppendLine("                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),");
-                    codigo.AppendLine("                    \"MiniCompiladoresUIP\",");
-                    codigo.AppendLine("                    \"Formularios\");
+                    codigo.AppendLine("                string carpetaDatos = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), \"MiniCompiladoresUIP\", \"Formularios\");");
                     codigo.AppendLine("                Directory.CreateDirectory(carpetaDatos);");
                     codigo.AppendLine("                string archivoDatos = Path.Combine(carpetaDatos, \"registros.csv\");");
                     codigo.AppendLine("                bool archivoNuevo = !File.Exists(archivoDatos);");
                     codigo.AppendLine();
                     codigo.AppendLine("                if (archivoNuevo)");
                     codigo.AppendLine("                {");
-                    codigo.AppendLine($"                    File.AppendAllText(archivoDatos, \"{Escapar(cabecera)}\" + Environment.NewLine, Encoding.UTF8);");
+                    codigo.AppendLine($"                    File.AppendAllText(archivoDatos, \"{EscaparTextoCs(cabecera)}\" + Environment.NewLine, new UTF8Encoding(false));");
                     codigo.AppendLine("                }");
                     codigo.AppendLine();
                     codigo.AppendLine("                string[] valores =");
                     codigo.AppendLine("                {");
+
                     foreach (string nombre in nombresCampos)
                     {
                         codigo.AppendLine($"                    campo_{nombre}.Text.Replace(\";\", \",\"),");
                     }
+
                     codigo.AppendLine("                };");
-                    codigo.AppendLine("                File.AppendAllText(archivoDatos, string.Join(\";\", valores) + Environment.NewLine, Encoding.UTF8);");
+                    codigo.AppendLine("                File.AppendAllText(archivoDatos, string.Join(\";\", valores) + Environment.NewLine, new UTF8Encoding(false));");
                     codigo.AppendLine();
-                    codigo.AppendLine("                MessageBox.Show(");
-                    codigo.AppendLine("                    \"Datos guardados correctamente.\\n\\nArchivo:\\n\" + archivoDatos,");
-                    codigo.AppendLine("                    \"Registro guardado\",");
-                    codigo.AppendLine("                    MessageBoxButtons.OK,");
-                    codigo.AppendLine("                    MessageBoxIcon.Information);");
+                    codigo.AppendLine("                MessageBox.Show(\"Datos guardados correctamente.\\n\\nArchivo:\\n\" + archivoDatos, \"Registro guardado\", MessageBoxButtons.OK, MessageBoxIcon.Information);");
                     codigo.AppendLine();
 
                     foreach (string nombre in nombresCampos)
@@ -284,11 +312,7 @@ static class LenguajeFormulario
                     codigo.AppendLine("            }");
                     codigo.AppendLine("            catch (Exception error)");
                     codigo.AppendLine("            {");
-                    codigo.AppendLine("                MessageBox.Show(");
-                    codigo.AppendLine("                    \"No fue posible guardar los datos.\\n\\n\" + error.Message,");
-                    codigo.AppendLine("                    \"Error al guardar\",");
-                    codigo.AppendLine("                    MessageBoxButtons.OK,");
-                    codigo.AppendLine("                    MessageBoxIcon.Error);");
+                    codigo.AppendLine("                MessageBox.Show(\"No fue posible guardar los datos.\\n\\n\" + error.Message, \"Error al guardar\", MessageBoxButtons.OK, MessageBoxIcon.Error);");
                     codigo.AppendLine("            }");
                 }
 
@@ -495,7 +519,12 @@ sealed class VentanaCompilador : Form
 
     private static void AgregarBoton(FlowLayoutPanel panel, string texto, Action accion)
     {
-        var boton = new Button { Text = texto, AutoSize = true };
+        var boton = new Button
+        {
+            Text = texto,
+            AutoSize = true
+        };
+
         boton.Click += (_, _) => accion();
         panel.Controls.Add(boton);
     }
@@ -508,8 +537,19 @@ sealed class VentanaCompilador : Form
         int fila,
         int altoTitulo)
     {
-        var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(4) };
-        var etiqueta = new Label { Text = titulo, Dock = DockStyle.Top, Height = altoTitulo };
+        var panel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(4)
+        };
+
+        var etiqueta = new Label
+        {
+            Text = titulo,
+            Dock = DockStyle.Top,
+            Height = altoTitulo
+        };
+
         panel.Controls.Add(control);
         panel.Controls.Add(etiqueta);
         tabla.Controls.Add(panel, columna, fila);
@@ -549,10 +589,12 @@ sealed class VentanaCompilador : Form
         try
         {
             List<Token> tokens = LenguajeFormulario.AnalizarLexico(fuente.Text);
-            tablaTokens.Rows.Clear();
 
+            tablaTokens.Rows.Clear();
             foreach (Token token in tokens)
+            {
                 tablaTokens.Rows.Add(token.Tipo, token.Texto, token.Linea);
+            }
 
             codigoGenerado.Text = LenguajeFormulario.AnalizarSintaxis(tokens);
             resultado.Text = "El formulario es válido.";
@@ -570,7 +612,10 @@ sealed class VentanaCompilador : Form
 
     private void GenerarFormulario()
     {
-        if (!Analizar()) return;
+        if (!Analizar())
+        {
+            return;
+        }
 
         ResultadoCompilacion compilacion = CompiladorFormulario.Compilar(codigoGenerado.Text);
         resultado.Text = compilacion.Mensaje;
@@ -588,7 +633,10 @@ sealed class VentanaCompilador : Form
             return;
         }
 
-        Process.Start(new ProcessStartInfo(ejecutableGenerado) { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(ejecutableGenerado)
+        {
+            UseShellExecute = true
+        });
     }
 }
 
