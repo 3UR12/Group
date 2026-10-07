@@ -4,7 +4,7 @@
 
 Este mini-compilador interpreta un lenguaje sencillo para describir formularios y genera una aplicación Windows Forms en C#.
 
-El usuario escribe instrucciones como:
+El usuario puede escribir instrucciones como:
 
 ```text
 FORMULARIO "Registro"
@@ -16,7 +16,9 @@ BOTON "Guardar"
 FIN_FORMULARIO
 ```
 
-El programa realiza análisis léxico, análisis sintáctico, una validación semántica básica, genera código C#, compila ese código y permite abrir el formulario resultante.
+El programa realiza análisis léxico, análisis sintáctico y una validación semántica básica. Después genera código C#, compila ese código y permite abrir la aplicación Windows Forms resultante.
+
+Cuando el formulario contiene `BOTON "Guardar"`, el botón generado permite almacenar los valores escritos en los campos en un archivo CSV local.
 
 ## Objetivo
 
@@ -36,6 +38,8 @@ Generación de C#
 Compilación
 ↓
 Aplicación Windows Forms
+↓
+Ingreso y guardado local de datos
 ```
 
 ## Nivel
@@ -46,15 +50,16 @@ Intermedio.
 
 Aplicación Windows Forms generada a partir del lenguaje fuente escrito por el usuario.
 
-El formulario no está definido de forma fija: el título y los controles dependen de las instrucciones proporcionadas.
+El formulario no está definido de forma fija. El título, las etiquetas, los campos y los botones dependen de las instrucciones proporcionadas.
 
 ## Tecnologías
 
 - C#.
 - .NET 8.
 - Windows Forms.
+- UTF-8.
 - `System.Diagnostics.Process` para compilar el código C# generado.
-- Codificación UTF-8 para mensajes y archivos generados.
+- Archivo CSV para el guardado local de los datos del formulario.
 
 ## Requisitos
 
@@ -79,7 +84,7 @@ Desde la raíz del repositorio:
 dotnet run --project ".\compiladores\09-compilador-lenguaje-para-formularios\MiniCompiladorFormularios.csproj"
 ```
 
-## Interfaz
+## Interfaz del mini-compilador
 
 La ventana principal contiene cinco acciones:
 
@@ -115,7 +120,7 @@ CAMPO identificador
 BOTON "Texto"
 ```
 
-El programa debe terminar con:
+El programa debe finalizar con:
 
 ```text
 FIN_FORMULARIO
@@ -133,8 +138,6 @@ FIN_FORMULARIO
 
 ## Tokens reconocidos
 
-El analizador utiliza estos tipos de token:
-
 | Tipo de token | Uso |
 |---|---|
 | `Formulario` | Palabra reservada `FORMULARIO`. |
@@ -146,7 +149,7 @@ El analizador utiliza estos tipos de token:
 | `Identificador` | Nombre utilizado para identificar un campo. |
 | `FinArchivo` | Marca interna que indica el final de la entrada. |
 
-Para:
+Ejemplo:
 
 ```text
 FORMULARIO "Registro"
@@ -156,7 +159,7 @@ BOTON "Guardar"
 FIN_FORMULARIO
 ```
 
-se reconocen unidades equivalentes a:
+produce unidades equivalentes a:
 
 | Entrada | Tipo |
 |---|---|
@@ -172,7 +175,7 @@ se reconocen unidades equivalentes a:
 
 ## Análisis sintáctico
 
-El parser exige esta estructura:
+El parser exige estas reglas:
 
 1. `FORMULARIO` debe aparecer primero.
 2. `FORMULARIO` debe ir seguido de un título entre comillas.
@@ -203,12 +206,42 @@ Cada instrucción se transforma en un control real de Windows Forms:
 
 | Lenguaje fuente | C# generado |
 |---|---|
-| `FORMULARIO "Registro"` | `new Form` con `Text = "Registro"` |
-| `ETIQUETA "Nombre"` | `new Label` |
-| `CAMPO nombre` | `new TextBox` con `Name = "nombre"` |
-| `BOTON "Guardar"` | `new Button` |
+| `FORMULARIO "Registro"` | `Form` con `Text = "Registro"`. |
+| `ETIQUETA "Nombre"` | `Label`. |
+| `CAMPO nombre` | `TextBox` identificado como `nombre`. |
+| `BOTON "Guardar"` | `Button` con evento de guardado. |
 
-El código generado se presenta con saltos de línea e indentación para que pueda revisarse en la interfaz.
+El código generado se muestra con saltos de línea e indentación para facilitar su revisión.
+
+## Funcionamiento del botón Guardar
+
+La instrucción:
+
+```text
+BOTON "Guardar"
+```
+
+genera un botón funcional.
+
+Al presionarlo:
+
+1. se comprueba que todos los campos tengan información;
+2. si algún campo está vacío, se muestra una advertencia y no se guarda el registro;
+3. si todos los campos tienen información, se crea o actualiza un archivo `registros.csv`;
+4. la primera vez se escriben los nombres de los campos como encabezados;
+5. cada guardado posterior agrega una nueva fila;
+6. se muestra una confirmación con la ruta exacta del archivo;
+7. los campos se limpian para permitir un nuevo registro.
+
+Los datos se guardan en:
+
+```text
+Documentos\MiniCompiladoresUIP\Formularios\registros.csv
+```
+
+La ruta parte de la carpeta Documentos del usuario actual de Windows.
+
+El archivo utiliza UTF-8 y formato CSV. Los valores se escriben entre comillas para evitar problemas con comas incluidas en los datos.
 
 ## Caso válido
 
@@ -237,7 +270,27 @@ Compilación correcta.
 0 errores
 ```
 
-5. `Abrir formulario generado` abre una ventana titulada `Registro` con etiquetas, campos y el botón `Guardar`.
+5. `Abrir formulario generado` abre una ventana titulada `Registro`.
+6. El usuario escribe valores en `Nombre` y `Correo`.
+7. Al pulsar `Guardar`, se crea o actualiza `registros.csv`.
+8. La aplicación muestra `Datos guardados correctamente.` y la ruta del archivo.
+
+Ejemplo de contenido:
+
+```csv
+"nombre","correo"
+"Ana Pérez","ana@ejemplo.com"
+```
+
+## Caso inválido: campo vacío al guardar
+
+Si el usuario abre el formulario generado e intenta pulsar `Guardar` dejando uno o más campos vacíos, aparece:
+
+```text
+Complete todos los campos antes de guardar.
+```
+
+No se agrega ninguna fila al archivo.
 
 ## Caso inválido: CAMPO sin identificador
 
@@ -292,19 +345,21 @@ Cuando se selecciona `Generar formulario`:
 4. si no existen errores, se conserva la ruta del ejecutable temporal;
 5. el botón `Abrir formulario generado` ejecuta ese archivo.
 
-Los archivos temporales generados por este proceso no se incluyen en el repositorio.
+Los archivos temporales generados por este proceso no forman parte del repositorio.
 
 ## Archivos del proyecto
 
 | Archivo | Función |
 |---|---|
-| `Program.cs` | Contiene lexer, parser, validación semántica, generador de C#, compilación y la interfaz Windows Forms del mini-compilador. |
+| `Program.cs` | Contiene lexer, parser, validación semántica, generador de C#, compilación e interfaz del mini-compilador. |
 | `MiniCompiladorFormularios.csproj` | Define el proyecto Windows Forms en .NET 8. |
-| `README.md` | Documenta sintaxis, tokens, pruebas, errores y uso de la aplicación. |
+| `README.md` | Documenta sintaxis, tokens, pruebas, errores, generación y guardado. |
 
 ## Alcance
 
-El lenguaje implementado crea controles básicos y está diseñado como ejemplo académico. No incluye persistencia de datos, eventos personalizados del botón, conexión a bases de datos ni diseño avanzado de interfaces.
+El proyecto es un ejemplo académico. Implementa controles básicos, compilación del formulario y guardado local simple en CSV. No utiliza base de datos, autenticación, servicios externos ni almacenamiento en red.
+
+La acción de persistencia está definida para `BOTON "Guardar"`. Otros textos de botón pueden generarse visualmente, pero no reciben una acción adicional automática.
 
 ## Integrantes
 
