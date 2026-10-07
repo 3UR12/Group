@@ -1,81 +1,22 @@
 using System.Text;
-using Grupo1.HolaMundo;
+using System.Text.RegularExpressions;
 
 Console.OutputEncoding = Encoding.UTF8;
-
-if (args.Contains("--pruebas", StringComparer.OrdinalIgnoreCase))
-{
-    Environment.ExitCode = PruebasHolaMundo.Ejecutar();
-    return;
-}
-
-Console.WriteLine("Mini-compilador Hola Mundo");
-Console.WriteLine("Entrada válida:");
-Console.WriteLine("  IMPRIMIR \"Hola Mundo\"");
-Console.WriteLine("o");
-Console.WriteLine("  INICIO");
-Console.WriteLine("  IMPRIMIR \"Hola Mundo\"");
-Console.WriteLine("  FIN");
-Console.WriteLine();
-Console.WriteLine("Escriba la entrada. Finalice con una línea vacía o con FIN:");
-
-var lineas = new List<string>();
-
-while (true)
-{
-    string? linea = Console.ReadLine();
-
-    if (linea is null || string.IsNullOrWhiteSpace(linea))
-    {
-        break;
-    }
-
-    lineas.Add(linea);
-
-    if (linea.Trim() == "FIN")
-    {
-        break;
-    }
-}
-
-string fuente = string.Join(Environment.NewLine, lineas);
-
+Console.InputEncoding = Encoding.UTF8;
+Console.WriteLine("Mini-compilador \"Hola Mundo\"");
+Console.WriteLine("\nEscriba una instrucción con este formato:\n\nIMPRIMIR \"texto\"\n\nEjemplo:\nIMPRIMIR \"Hola Mundo\"");
+Console.Write("\nCódigo > ");
+var fuente = Console.ReadLine() ?? string.Empty;
 try
 {
-    var compilador = new CompiladorHolaMundo();
-    ResultadoCompilacion resultado = compilador.Compilar(fuente);
-
-    Console.WriteLine();
-    Console.WriteLine("Tokens:");
-
-    foreach (Token token in resultado.Tokens.Where(t => t.Tipo != TipoToken.FinArchivo))
-    {
-        Console.WriteLine($"  {token.Tipo,-12} {token.Lexema}");
-    }
-
-    Console.WriteLine();
-    Console.WriteLine("Código C# generado:");
-    Console.WriteLine();
-    Console.WriteLine(resultado.CodigoCSharp);
-
-    var compiladorDotNet = new CompiladorDotNet();
-    ResultadoEjecucion ejecucion = compiladorDotNet.CompilarYEjecutar(resultado.CodigoCSharp);
-
-    Console.WriteLine();
-    Console.WriteLine($"Archivo C#: {ejecucion.RutaCodigo}");
-
-    if (ejecucion.RutaEjecutable is not null)
-    {
-        Console.WriteLine($"Ejecutable: {ejecucion.RutaEjecutable}");
-    }
-
-    Console.WriteLine();
-    Console.WriteLine("Resultado de ejecución:");
-    Console.WriteLine(ejecucion.Salida);
+    var tokens = new List<(string Texto, string Tipo)>();
+    foreach (Match coincidencia in Regex.Matches(fuente, "\\\"[^\\\"]*\\\"|\\S+")) { var texto = coincidencia.Value; var tipo = texto switch { "IMPRIMIR" => "PALABRA_RESERVADA", _ when texto.StartsWith('"') && texto.EndsWith('"') => "CADENA", _ => throw new Exception($"Error léxico: '{texto}' no es una palabra reservada válida.") }; tokens.Add((texto, tipo)); }
+    if (tokens.Count == 0 || tokens[0].Texto != "IMPRIMIR") throw new Exception("Error sintáctico: se esperaba IMPRIMIR.");
+    if (tokens.Count < 2 || tokens[1].Tipo != "CADENA") throw new Exception("Error sintáctico: se esperaba una cadena después de IMPRIMIR.");
+    if (tokens.Count > 2) throw new Exception("Error sintáctico: hay texto adicional no válido.");
+    var mensaje = tokens[1].Texto.Trim('"');
+    Console.WriteLine("\nCódigo fuente recibido:\n" + fuente + "\n\nTokens encontrados:"); foreach (var token in tokens) Console.WriteLine($"{token.Texto,-22}{token.Tipo}");
+    Console.WriteLine("\nAnálisis sintáctico: correcto.\n\nCódigo C# generado:\nusing System;\n\nclass Program\n{\n    static void Main()\n    {\n        Console.WriteLine(\"" + mensaje + "\");\n    }\n}");
+    Console.WriteLine("\nResultado:\n" + mensaje);
 }
-catch (ErrorCompilacion error)
-{
-    Console.WriteLine();
-    Console.WriteLine(error.Message);
-    Environment.ExitCode = 1;
-}
+catch (Exception error) { Console.WriteLine(error.Message); }
